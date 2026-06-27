@@ -21,6 +21,27 @@ It installs:
 
 (ros2_control, ros2_controllers, MoveIt come from the base ROS install used for sim.)
 
+## Validate the launch path in software first — vcan (no hardware needed)
+
+Before any arm or adapter arrives, confirm the whole real-hardware software path on a
+machine with **no CAN hardware**:
+
+```bash
+bash scripts/test-vcan.sh
+```
+
+It creates virtual CAN buses named `can0`/`can1` (matching the bimanual defaults),
+launches with `use_fake_hardware:=false`, and inspects the driver. **Verified result:**
+the `OpenArmHW` plugin loads, the CAN socket opens (no `CANSocketException`), the
+hardware **configures and activates**, and the driver emits tens of thousands of CAN
+frames on `can0` (confirmed via `candump`). The script refuses to run if a *real*
+`can0`/`can1` already exists.
+
+Honest boundary: with no motors replying, controller spawning may time out (the
+no-motor zero-return loop blocks the executor) and `rviz` needs a display — both clear
+on the real rig. The test proves everything up to "talk to motors": plugin, launch,
+config, socket, and TX path.
+
 ## 2. Bring up the CAN interface
 
 **Native USB-CAN adapter (on a Linux host wired to the arm):**
