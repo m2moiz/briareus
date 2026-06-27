@@ -18,9 +18,13 @@ foxglove:
 wiggle:
     limactl shell {{vm}} bash -lc 'source /opt/ros/humble/setup.bash; source ~/ros2_ws/install/setup.bash; python3 ~/wiggle.py'
 
-# interactive MoveIt in RViz over X11 (needs XQuartz installed)
+# interactive MoveIt in RViz via in-VM VNC — connect: open vnc://localhost:5901 (password: openarm)
 moveit:
-    "{{root}}/scripts/openarm-gui.sh" moveit
+    "{{root}}/scripts/openarm-vnc.sh" moveit
+
+# bare RViz2 via in-VM VNC (password: openarm)
+rviz:
+    "{{root}}/scripts/openarm-vnc.sh" rviz
 
 # stop all ROS processes in the VM (VM stays up)
 stop:

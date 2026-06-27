@@ -13,13 +13,22 @@ set -e
 open -a XQuartz 2>/dev/null || { echo "XQuartz not installed — install it first"; exit 1; }
 sleep 2
 
-# If DISPLAY isn't set in this shell (e.g. XQuartz freshly installed, no relogin yet),
-# default to :0 — the X server XQuartz starts. Avoids needing a logout/login.
-export DISPLAY="${DISPLAY:-:0}"
+# Get XQuartz's REAL display from launchd. `just`/sh may not inherit DISPLAY, and
+# :0 lacks XQuartz's auth cookie (keyed to the launchd-path display), so forwarding
+# silently fails. launchctl returns e.g. /private/tmp/.../org.xquartz:0 after login.
+_lc_disp="$(launchctl getenv DISPLAY 2>/dev/null)"
+export DISPLAY="${_lc_disp:-${DISPLAY:-:0}}"
+echo "using DISPLAY=$DISPLAY"
 
 SSHCFG="$HOME/.lima/openarm/ssh.config"
 [ -f "$SSHCFG" ] || { echo "Lima ssh config missing — is the VM up? (limactl list)"; exit 1; }
-SSH=(ssh -F "$SSHCFG" -Y lima-openarm)
+# macOS ssh defaults XAuthLocation to /usr/X11R6/bin/xauth (gone on modern macOS);
+# XQuartz ships xauth at /opt/X11/bin/xauth — point ssh there or X11 forwarding silently fails.
+XAUTH=/opt/X11/bin/xauth
+# Lima's ssh.config sets ControlMaster/ControlPath; the persistent master socket was
+# opened WITHOUT X11 forwarding, so a plain `ssh -Y` reuses it and -Y is ignored.
+# Force a fresh, non-multiplexed connection so X11 forwarding actually takes effect.
+SSH=(ssh -F "$SSHCFG" -Y -o "XAuthLocation=$XAUTH" -o ControlMaster=no -o ControlPath=none lima-openarm)
 
 # LIBGL_ALWAYS_SOFTWARE=1 forces Mesa llvmpipe in the guest (the only GL path that
 # works over forwarding here) and avoids slow/broken indirect-GLX negotiation.
