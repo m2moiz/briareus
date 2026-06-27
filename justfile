@@ -26,6 +26,10 @@ moveit:
 rviz:
     "{{root}}/scripts/openarm-vnc.sh" rviz
 
+# collision-aware MoveIt Macarena — every beat planned + collision-checked (watch: open vnc://localhost:5901)
+moveit-dance:
+    "{{root}}/scripts/moveit-dance.sh"
+
 # stop all ROS processes in the VM (VM stays up)
 stop:
     "{{root}}/scripts/stop.sh"
