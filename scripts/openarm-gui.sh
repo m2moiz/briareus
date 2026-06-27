@@ -13,6 +13,10 @@ set -e
 open -a XQuartz 2>/dev/null || { echo "XQuartz not installed — install it first"; exit 1; }
 sleep 2
 
+# If DISPLAY isn't set in this shell (e.g. XQuartz freshly installed, no relogin yet),
+# default to :0 — the X server XQuartz starts. Avoids needing a logout/login.
+export DISPLAY="${DISPLAY:-:0}"
+
 SSHCFG="$HOME/.lima/openarm/ssh.config"
 [ -f "$SSHCFG" ] || { echo "Lima ssh config missing — is the VM up? (limactl list)"; exit 1; }
 SSH=(ssh -F "$SSHCFG" -Y lima-openarm)
