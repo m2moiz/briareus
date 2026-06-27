@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Logs (regenerable provisioning/run output)
+logs/
+*.log
+
+# Local Dolt working data (beads tracks issues via the Dolt server)
+.dolt/
+
+# Tooling / workflow files — kept local, out of repo history
+AGENTS.md
+CLAUDE.md
+.beads/
+.claude/
+.planning/
