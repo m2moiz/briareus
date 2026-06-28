@@ -33,6 +33,12 @@ Collect **15–20 poses** spread in orientation + position (each must see the ma
 click **compute**, then **save**. Torso cam: `calibration_type:=eye_to_hand`,
 target on a gripper, camera frame fixed.
 
+> **Solver:** prefer **PARK** or **ANDREFF**, not TSAI. Our `sim_verify_handeye.py`
+> showed TSAI off by ~33 mm even on noise-free data, while PARK/ANDREFF recovered the
+> transform exactly. Run `python3 cameras/sim_verify_handeye.py` and
+> `sim_verify_intrinsics.py` to confirm the calibration pipeline recovers known
+> ground truth before trusting it on real data.
+
 ## ⚠️ Rolling shutter (the RGB torso cam)
 A global-shutter cam can be captured while moving; a **rolling-shutter** cam skews
 during motion and corrupts the PnP. For the RGB torso cam: **move → stop → settle
