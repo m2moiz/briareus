@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""cameracalibrator detection check over a virtual camera (no hardware).
+"""cameracalibrator binary + driver pipeline check over a virtual camera (no hardware).
 
-Runs the ACTUAL `ros2 run camera_calibration cameracalibrator` binary — the tool
-calibrate-intrinsics.md tells the operator to use — against a live v4l2 stream and
-confirms it detects the board and accumulates calibration samples:
+Runs the ACTUAL `ros2 run camera_calibration cameracalibrator` binary against a live
+v4l2 stream and confirms it detects the board and accumulates calibration samples:
 
     moving chessboard --ffmpeg--> /dev/video10 --> v4l2_camera_node
         --> /sim_cam/image_raw --> cameracalibrator (--size 7x5 --square 0.030)
+
+This streams a plain CHESSBOARD on purpose: it verifies the full binary + driver
+pipeline (subscribe -> detect -> accumulate) reliably and headlessly. The binary's
+`-p charuco` GUI mode does not reliably subscribe in this Humble build (see
+calibrate-intrinsics.md); the ChArUco calibration engine itself is covered by
+sim_verify_charuco_engine.py.
 
 The calibrator prints "*** Added sample N, p_x=.. p_y=.. p_size=.. skew=.." each
 time it accepts a detected board pose; we assert several samples accumulate with
