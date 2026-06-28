@@ -2,9 +2,10 @@
 """ChArUco calibration-engine check (no hardware, no GUI).
 
 sim_verify_calibrator.py runs the cameracalibrator *binary* end-to-end, but streams
-a plain chessboard — the binary's `-p charuco` GUI mode does not reliably subscribe
-in this ROS 2 Humble build (see calibrate-intrinsics.md note). This test verifies
-the piece that matters for the ChArUco workflow: cameracalibrator's own calibration
+a plain chessboard — the binary's `-p charuco` GUI mode accumulates no samples in
+this ROS 2 Humble build (even on a static detectable board; cause unconfirmed, see
+calibrate-intrinsics.md note). This test verifies the piece that matters for the
+ChArUco workflow regardless: cameracalibrator's own calibration
 engine (camera_calibration.MonoCalibrator) detects a ChArUco board and accumulates
 samples, using the EXACT board params the runbook documents
 (7x5, 30 mm square, 22 mm marker, dict 5x5_100, `-p charuco`).
