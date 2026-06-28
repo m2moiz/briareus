@@ -43,8 +43,11 @@ good. **SAVE** writes a tarball with the `CameraInfo` YAML.
 > `sim_verify_charuco_engine.py` (cameracalibrator's `MonoCalibrator` accumulates
 > ChArUco samples), and `sim_verify_intrinsics.py` (recovers known K+distortion).
 > Note: in the dev VM's `camera_calibration` (Humble) build, the `cameracalibrator`
-> GUI's `-p charuco` mode did not reliably subscribe to the image stream; the engine
-> itself is correct. If the GUI shows no detections on the real rig, a plain
+> GUI's `-p charuco` mode accumulated **no** samples — even on a static, clearly
+> detectable board, with no error logged — while plain-checkerboard mode works and
+> the ChArUco engine itself accumulates correctly. Cause unconfirmed (a quirk of this
+> build's live charuco GUI path, not the detector or math). If the GUI shows no
+> detections on the real rig, a plain
 > **checkerboard** (printed separately, run with `--size 7x5 --square 0.030` and no
 > `-p charuco`) is the verified-reliable fallback for intrinsics —
 > `sim_verify_calibrator.py` confirms that path end-to-end through the driver.

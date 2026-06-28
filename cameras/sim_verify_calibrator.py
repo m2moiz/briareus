@@ -9,9 +9,9 @@ v4l2 stream and confirms it detects the board and accumulates calibration sample
 
 This streams a plain CHESSBOARD on purpose: it verifies the full binary + driver
 pipeline (subscribe -> detect -> accumulate) reliably and headlessly. The binary's
-`-p charuco` GUI mode does not reliably subscribe in this Humble build (see
-calibrate-intrinsics.md); the ChArUco calibration engine itself is covered by
-sim_verify_charuco_engine.py.
+`-p charuco` GUI mode accumulates no samples in this Humble build even on a static
+detectable board (cause unconfirmed; see calibrate-intrinsics.md); the ChArUco
+calibration engine itself is covered by sim_verify_charuco_engine.py.
 
 The calibrator prints "*** Added sample N, p_x=.. p_y=.. p_size=.. skew=.." each
 time it accepts a detected board pose; we assert several samples accumulate with
