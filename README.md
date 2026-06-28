@@ -6,7 +6,7 @@ A bimanual [OpenArm](https://github.com/enactic/openarm_ros2) robot arm, driven 
 
 - A bimanual OpenArm: two 7-DOF arms with grippers (joints `openarm_left_joint1..7` and `openarm_right_joint1..7`).
 - A perception kit for three UVC cameras under `cameras/`: one on each gripper (eye-in-hand) and one on the torso (eye-to-hand).
-- Motion demos: a wiggle test, scripted poses, a collision-aware MoveIt Macarena, and a beat-synced Macarena.
+- Motion demos: a wiggle test, scripted poses, a collision-aware MoveIt Macarena, a beat-synced Macarena, and a bimanual drum beat with drumsticks held in the grippers.
 - A `justfile` of short task targets that wrap the VM and the ROS 2 launches.
 - Calibration runbooks and no-hardware regression suites that check the machinery against known ground truth.
 
