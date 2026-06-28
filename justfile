@@ -34,6 +34,10 @@ moveit-dance:
 macarena-music:
     "{{root}}/scripts/macarena-music.sh"
 
+# bimanual drum beat (alternating toms) + synced audio, sticks rendered (watch: Foxglove ws://localhost:8765)
+drums BPM="90" BARS="4":
+    "{{root}}/scripts/drums.sh" {{BPM}} {{BARS}}
+
 # stop all ROS processes in the VM (VM stays up)
 stop:
     "{{root}}/scripts/stop.sh"
