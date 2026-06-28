@@ -83,6 +83,7 @@ Run `just` with no argument to list every target. The full set:
 | `just rviz` | Bare RViz2 via in-VM VNC (same connection and password). |
 | `just moveit-dance` | Collision-aware MoveIt Macarena; each beat is planned and collision-checked (watch via VNC). |
 | `just macarena-music` | Beat-synced Macarena to a 103 BPM click track; audio plays on the Mac, the arm moves in sim. |
+| `just drums` | Bimanual drum beat (alternating toms) with drumsticks rendered in the grippers, plus a synced drum loop on the Mac. Watch in Foxglove. |
 | `just stop` | Stop all ROS processes in the VM; the VM keeps running (`scripts/stop.sh`). |
 | `just shell` | Open a shell inside the VM. |
 | `just vm-up` / `just vm-down` | Start / stop the VM itself. |
@@ -146,6 +147,15 @@ just macarena-music
 ```
 
 `scripts/macarena-music.sh` generates the click track on first run via `scripts/make-click-track.py` (into `assets/macarena_click_103bpm.wav`), copies `macarena_synced.py` into the VM, ensures `move_group` and all five controllers are up, then starts the dance and the audio together. `scripts/macarena_synced.py` builds one timed `JointTrajectory` per arm with waypoints stamped at exact beat times and lets the controller replay them on those timestamps, so each move lands on its beat. Live MoveIt planning is too slow to hit the 0.58 s beats, which is why these already-validated poses are played back on a timed schedule instead. The BPM is an optional argument and defaults to 103.
+
+The drum beat plays a bimanual groove with drumsticks held in the grippers:
+
+```bash
+just drums            # 90 BPM, 4 bars
+just drums 100 8      # BPM and bar count are optional arguments
+```
+
+`scripts/drums.sh` brings up fake hardware through `scripts/drums.launch.py`, which adds two drumstick links to the robot description (one fixed to each gripper's `ee_base_link`, pointing out along the grasp axis) and starts a Foxglove bridge. `scripts/drumbeat.py` plays an alternating-tom pattern (the arms trade strikes left-right on an 8th-note pulse) as timed trajectories that land on the beat grid, the same approach as the synced Macarena. `scripts/make-drum-loop.py` synthesizes a matching two-tom loop that plays on the Mac in time with the strikes. Because the sticks are rendered, watch this one in Foxglove (Open Connection, `ws://localhost:8765`, add a 3D panel) rather than RViz.
 
 A shared helper, `scripts/safe_motion.py`, can pace trajectories to calibrated per-joint safe velocities read from `motion_limits.yaml`, falling back to slow defaults when no calibration file exists yet.
 
