@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!-- Camera frames for the OpenArm. After hand-eye calibration, paste the measured
+     transforms into the xyz/rpy below and xacro:include this from the robot xacro,
+     so tf publishes each camera's optical frame relative to the arm. -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="openarm_camera" params="name parent xyz rpy">
+    <link name="${name}_optical_frame"/>
+    <joint name="${name}_mount" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${name}_optical_frame"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- EYE-IN-HAND wrist cams: parent = the gripper/ee link; xyz/rpy = camera->ee (easy_handeye2) -->
+  <xacro:openarm_camera name="left_gripper_camera"  parent="openarm_left_ee_base_link"  xyz="0 0 0" rpy="0 0 0"/>
+  <xacro:openarm_camera name="right_gripper_camera" parent="openarm_right_ee_base_link" xyz="0 0 0" rpy="0 0 0"/>
+
+  <!-- EYE-TO-HAND torso cam: parent = base/world; xyz/rpy = camera->base (easy_handeye2) -->
+  <xacro:openarm_camera name="torso_camera" parent="world" xyz="0 0 0" rpy="0 0 0"/>
+
+</robot>

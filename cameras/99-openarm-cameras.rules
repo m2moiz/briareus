@@ -1,0 +1,15 @@
+# OpenArm cameras — pin the 3 identical UVC cameras to stable names by USB PORT PATH.
+# (Identical cameras often share/lack serials, so we key on the physical port, not serial.)
+#
+# 1. run cameras/discover-cameras.sh to get each USB port path
+# 2. replace the FILL-* values below with those paths
+# 3. install + reload:
+#      sudo cp cameras/99-openarm-cameras.rules /etc/udev/rules.d/
+#      sudo udevadm control --reload-rules && sudo udevadm trigger
+# 4. confirm:  ls -l /dev/cam_*
+#
+# ATTR{index}=="0" selects the main capture node (a UVC cam exposes video0+video1).
+
+SUBSYSTEM=="video4linux", KERNELS=="FILL-TORSO-PORT",      ATTR{index}=="0", SYMLINK+="cam_torso"
+SUBSYSTEM=="video4linux", KERNELS=="FILL-LEFT-GRIP-PORT",  ATTR{index}=="0", SYMLINK+="cam_grip_left"
+SUBSYSTEM=="video4linux", KERNELS=="FILL-RIGHT-GRIP-PORT", ATTR{index}=="0", SYMLINK+="cam_grip_right"
