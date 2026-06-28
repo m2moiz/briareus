@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- Functional test harness for openarm-cameras.xacro: a minimal robot that
+     supplies the parent links (world + dummy ee links) and includes the camera
+     frames, so robot_state_publisher can publish them and we can tf2_echo each
+     camera frame. Proves the camera frames integrate + publish in tf.
+     (Not part of the robot; used only by the frames test.) -->
+<robot name="camera_frame_test" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link name="world"/>
+  <link name="openarm_left_ee_base_link"/>
+  <link name="openarm_right_ee_base_link"/>
+  <joint name="world_to_left_ee" type="fixed">
+    <parent link="world"/><child link="openarm_left_ee_base_link"/>
+    <origin xyz="0.20 0.10 0.50" rpy="0 0 0"/>
+  </joint>
+  <joint name="world_to_right_ee" type="fixed">
+    <parent link="world"/><child link="openarm_right_ee_base_link"/>
+    <origin xyz="0.20 -0.10 0.50" rpy="0 0 0"/>
+  </joint>
+  <xacro:include filename="openarm-cameras.xacro"/>
+</robot>
