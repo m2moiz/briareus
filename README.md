@@ -1,71 +1,69 @@
-# Unaite Paris Builds — OpenArm Hackathon
+# briareus
 
-Working folder for the OpenArm robotic-arm hackathon project. Holds the research,
-the environment-setup scripts, and the launchers for running and visualizing the arm.
+A bimanual [OpenArm](https://github.com/enactic/openarm_ros2) robot arm, driven in simulation on macOS. The ROS 2 software runs inside a Lima VM, and you watch the arm move on your Mac in Foxglove or RViz. Driving the physical arm is a separate path that needs a native Linux host with a CAN bus, covered in `HARDWARE.md`.
 
-## Layout
+## What's in here
+
+- A bimanual OpenArm: two 7-DOF arms with grippers (joints `openarm_left_joint1..7` and `openarm_right_joint1..7`).
+- A perception kit for three UVC cameras under `cameras/`: one on each gripper (eye-in-hand) and one on the torso (eye-to-hand).
+- Motion demos: a wiggle test, scripted poses, a collision-aware MoveIt Macarena, and a beat-synced Macarena.
+- A `justfile` of short task targets that wrap the VM and the ROS 2 launches.
+- Calibration runbooks and no-hardware regression suites that check the machinery against known ground truth.
+
+## Architecture
 
 ```
-uniate_paris_builds_hackathon/
-├── README.md                       ← this file
-├── docs/
-│   └── openarm-research.md          ← full research: repos, specs, LeRobot/dora/ROS2, setup, sources
-├── scripts/
-│   ├── setup-openarm-ros2-vm.sh     ← ROS 2 setup for a fresh Ubuntu 22.04 VM (generic)
-│   ├── provision-ros2.sh            ← what provisioned the Lima VM (ROS 2 Humble + deps)
-│   ├── build-ros2.sh                ← builds openarm_ros2 (mock hardware) in the VM
-│   ├── openarm-foxglove.sh          ← run the arm + Foxglove bridge (smooth, GPU viz on Mac)
-│   └── openarm-gui.sh               ← X11-forwarded RViz / MoveIt (needs XQuartz)
-├── logs/
-│   └── provision.log                ← provisioning run log
-└── config.yaml                      ← stock Dolt/beads server config (pre-existing, unrelated)
+macOS host                              Lima VM "openarm" (Ubuntu 22.04)
+----------                              --------------------------------
+just (task runner) ──limactl shell──>   ROS 2 Humble + ros2_control + MoveIt 2
+Foxglove app  ──ws://localhost:8765──>  foxglove_bridge   (3D viz)
+Screen Sharing ──vnc://localhost:5901─> Xvnc + RViz / MoveIt (software Mesa)
+                                        workspace: ~/ros2_ws
+                                        bringup: openarm_bringup
+                                                 openarm.bimanual.launch.py
 ```
 
-The scripts are self-contained (they call `limactl` and `~/.lima/openarm/...` by absolute
-path), so they work from this folder.
+The Mac runs the task runner and the viewers. Everything ROS-related (the controllers, the planner, the robot model) runs inside the VM. On Apple Silicon the VM runs natively on arm64 with no emulation. The cameras and the CAN bus only come into play on the real-hardware path.
 
-## Environment (already set up & verified)
+## Five-minute quickstart
 
-- **Lima VM `openarm`** — Ubuntu 22.04.5 LTS, native ARM64 (Apple Silicon, no emulation),
-  4 CPU / 8 GiB / 64 GiB. Manage with `limactl start|stop|shell openarm`.
-- **ROS 2 Humble** + `ros2_control` + MoveIt 2, workspace at `~/ros2_ws` *inside the VM*.
-- Built packages: `openarm`, `openarm_bringup`, `openarm_bimanual_moveit_config`, `openarm_description`.
-- **Foxglove** desktop app installed on the Mac → connects to `ws://localhost:8765`.
+You need three things on the Mac: Lima (`brew install lima`), just (`brew install just`), and the Foxglove desktop app from foxglove.dev.
 
-The real arm needs a **native Linux host** (CAN bus is Linux-only); this VM is the dev/sim
-environment. See `docs/openarm-research.md` §10 for the full rationale.
-
-## Running it
-
-**Smooth visualization (recommended):**
 ```bash
-scripts/openarm-foxglove.sh          # starts robot (fake hw) + bridge in the VM
-# then: Foxglove app → Open Connection → ws://localhost:8765 → add a 3D panel
+# 1. Create the VM (one time), 4 CPU / 8 GiB / 64 GiB to match the tested spec
+limactl start --name=openarm --cpus=4 --memory=8 --disk=64 template://ubuntu-22.04
+
+# 2. Provision ROS 2 Humble and build the workspace (one time; the apt step is long)
+limactl shell openarm bash -s < scripts/provision-ros2.sh
+
+# 3. Launch the demo: VM + bimanual bringup (fake hardware) + wiggle + Foxglove bridge
+just demo
 ```
 
-**Manual, inside the VM:**
-```bash
-limactl shell openarm
-ros2 launch openarm_bringup openarm.bimanual.launch.py use_fake_hardware:=true
-ros2 node list ; ros2 topic echo /joint_states --once
-```
+When the terminal prints `CONNECT Foxglove now`, switch to Foxglove, choose Open Connection, enter `ws://localhost:8765`, and add a 3D panel. The arm loads from `/robot_description` and both arms wiggle live. Press Ctrl-C in the terminal to stop everything inside the VM; the VM stays up.
 
-**Interactive MoveIt planning (needs XQuartz on the Mac):**
-```bash
-scripts/openarm-gui.sh moveit
-```
+Run `just` with no argument to list every target. The full step-by-step guide, including the camera calibration and the regression suites, is in `docs/GETTING-STARTED.md`.
 
-## Facts verified against the running system (the docs/README were wrong)
+## Repo map
 
-- Launch arg is **`use_fake_hardware:=true`** (default already `true`) — not `hardware_type`.
-- Default `arm_type` is **`openarm_v2.0`** (not `v10`).
-- Only **`openarm.bimanual.launch.py`** ships (no single-arm `openarm.launch.py`).
-- **`openarm_description`** is a *separate* repo — must be cloned into the workspace.
-- ROS 2's `setup.bash` trips `set -u` (`AMENT_TRACE_SETUP_FILES` unbound) — don't use strict mode around it.
+| Path | What it covers |
+|---|---|
+| `docs/GETTING-STARTED.md` | Full setup and run guide: prerequisites, VM creation, workspace build, motion demos, viewers, and the camera sim-verify suite. |
+| `cameras/README.md` | Camera calibration and perception kit: intrinsics, hand-eye extrinsics, udev pinning, and the `sim_verify_*.py` regression tests. |
+| `CALIBRATION.md` | Zero-position motor calibration on the real arm, using OpenArm's `openarm-can-utils` tools. Real hardware only. |
+| `HARDWARE.md` | Moving from the sim VM to the physical arm: CAN provisioning, the vcan software-validation path, and the real-arm launch. |
+| `justfile` | The task targets (`just demo`, `just foxglove`, `just moveit`, `just macarena-music`, `just stop`, and the rest). |
+| `scripts/` | The launch wrappers and motion nodes the targets call. |
 
-## Next steps
+## Verified in simulation vs needs the real rig
 
-- Add a small joint-wiggle publisher to see motion live in Foxglove.
-- Pick a hackathon idea (see `docs/openarm-research.md`) and scaffold a package.
-- For the real arm: provision a Linux host with `scripts/provision-ros2.sh` + `build-ros2.sh`,
-  then build *with* `openarm_hardware` and bring up the CAN interface.
+Everything in the quickstart and in `docs/GETTING-STARTED.md` runs in simulation with `use_fake_hardware:=true`: no CAN bus, no physical arm. The mock hardware has no gravity, no effort feedback, and perfect position tracking, so the demos exercise the full motion path (controllers, trajectories, MoveIt planning) without a robot attached. The camera `sim_verify_*.py` suite checks the calibration pipeline and math against synthetic ground truth, not real sensors.
+
+These only run on the physical OpenArm, on a native Linux host wired to the CAN bus (the USB-CAN adapter has no macOS driver):
+
+- Zero-position motor calibration (`CALIBRATION.md`, `scripts/calibrate-hardware.sh`).
+- The real-arm launch with `use_fake_hardware:=false` (`HARDWARE.md`).
+- The measured half of motion-limit calibration. `scripts/calibrate.py` writes conservative `measured: false` defaults in sim; real gravity and tracking tuning happens on hardware.
+- The cameras' actual intrinsics and distortion, the udev USB port mapping, the torso camera's rolling-shutter behavior, and the live hand-eye capture.
+
+The vcan path in `HARDWARE.md` lets you validate the entire real-hardware software path (plugin load, launch parsing, CAN socket open, TX frames) on a Linux box with no arm attached, before any hardware arrives.
