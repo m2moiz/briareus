@@ -12,9 +12,10 @@ logs/
 # Local Dolt working data (beads tracks issues via the Dolt server)
 .dolt/
 
-# Tooling / workflow files — kept local, out of repo history
-AGENTS.md
-CLAUDE.md
+# Agent context — shared with the team
+# (AGENTS.md and CLAUDE.md are tracked on purpose)
+
+# Local tooling / workflow state — kept out of the repo
 .beads/
 .claude/
 .planning/
