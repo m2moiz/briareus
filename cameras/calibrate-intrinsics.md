@@ -37,20 +37,20 @@ Move the board to cover: all corners/edges of the frame, near + far, and tilted
 (±30°). Capture ~20–30 views; the **CALIBRATE** button enables when coverage is
 good. **SAVE** writes a tarball with the `CameraInfo` YAML.
 
-> **Verified in sim / fallback.** The ChArUco detector and the calibration engine
-> are sim-verified against ground truth: run `python3 cameras/sim_verify_detection.py`
-> (real `detectMarkers`+`interpolateCornersCharuco` across poses),
-> `sim_verify_charuco_engine.py` (cameracalibrator's `MonoCalibrator` accumulates
-> ChArUco samples), and `sim_verify_intrinsics.py` (recovers known K+distortion).
-> Note: in the dev VM's `camera_calibration` (Humble) build, the `cameracalibrator`
-> GUI's `-p charuco` mode accumulated **no** samples — even on a static, clearly
-> detectable board, with no error logged — while plain-checkerboard mode works and
-> the ChArUco engine itself accumulates correctly. Cause unconfirmed (a quirk of this
-> build's live charuco GUI path, not the detector or math). If the GUI shows no
-> detections on the real rig, a plain
-> **checkerboard** (printed separately, run with `--size 7x5 --square 0.030` and no
-> `-p charuco`) is the verified-reliable fallback for intrinsics —
-> `sim_verify_calibrator.py` confirms that path end-to-end through the driver.
+> **Verified in sim.** The ChArUco detector and the calibrator are checked against ground
+> truth: `python3 cameras/sim_verify_detection.py` (real `detectMarkers` +
+> `interpolateCornersCharuco` across poses), `sim_verify_charuco_engine.py` (the
+> calibrator's `MonoCalibrator` accumulates ChArUco samples), and
+> `sim_verify_intrinsics.py` (recovers known K + distortion).
+>
+> Two usability notes from running the live `cameracalibrator -p charuco` over a virtual
+> camera. ChArUco detection is slower per frame than plain-checkerboard detection. And the
+> calibrator only accepts a new view when the board's position, size, or tilt changes enough
+> (an L1 threshold over those coordinates), so a board held too still accumulates only one
+> sample and the CALIBRATE button stays greyed. Move the board through distance and tilt to
+> collect the 20-30 views; raise `--queue-size` if frames feel dropped. A plain checkerboard
+> (`--size 7x5 --square 0.030`, no `-p charuco`) detects faster if you prefer it;
+> `sim_verify_calibrator.py` exercises that path end-to-end.
 
 ## Output
 Place the resulting YAML at `cameras/calib/<name>.yaml`

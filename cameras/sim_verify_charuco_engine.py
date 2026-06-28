@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """ChArUco calibration-engine check (no hardware, no GUI).
 
-sim_verify_calibrator.py runs the cameracalibrator *binary* end-to-end, but streams
-a plain chessboard — the binary's `-p charuco` GUI mode accumulates no samples in
-this ROS 2 Humble build (even on a static detectable board; cause unconfirmed, see
-calibrate-intrinsics.md note). This test verifies the piece that matters for the
-ChArUco workflow regardless: cameracalibrator's own calibration
-engine (camera_calibration.MonoCalibrator) detects a ChArUco board and accumulates
-samples, using the EXACT board params the runbook documents
-(7x5, 30 mm square, 22 mm marker, dict 5x5_100, `-p charuco`).
+sim_verify_calibrator.py runs the cameracalibrator *binary* with a chessboard (faster
+detection). This test pins the ChArUco half deterministically: it drives cameracalibrator's
+own calibration engine (camera_calibration.MonoCalibrator) directly, so accumulation does
+not depend on the live binary's frame throughput. The live `-p charuco` binary works too; it
+is just slower per frame than chessboard (see calibrate-intrinsics.md). Uses the EXACT board
+params the runbook documents (7x5, 30 mm square, 22 mm marker, dict 5x5_100, `-p charuco`).
 
 Renders moving ChArUco frames and drives MonoCalibrator.handle_msg directly, then
 asserts several samples accumulate with real frame-coverage spread.
