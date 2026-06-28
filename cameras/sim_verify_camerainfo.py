@@ -15,6 +15,7 @@ Requires a sourced ROS 2.
     python3 sim_verify_camerainfo.py
 """
 import os
+import signal
 import subprocess
 import tempfile
 import numpy as np
@@ -51,6 +52,24 @@ projection_matrix:
 """
 
 
+def kill_group(p, wait=4):
+    """Kill the subprocess group. `ros2 run` forks the node child, so p.pid (group
+    leader via start_new_session) must be SIGKILLed to be sure the node dies too —
+    not just the wrapper. Never pkill -f (would self-match the launching command)."""
+    try:
+        os.killpg(p.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    try:
+        p.wait(timeout=wait)
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        os.killpg(p.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
+
 class Sink(Node):
     def __init__(self):
         super().__init__("camerainfo_sink")
@@ -73,7 +92,7 @@ def main():
     proc = subprocess.Popen(
         ["ros2", "run", "image_publisher", "image_publisher_node", img_path,
          "--ros-args", "-r", f"__ns:={NS}", "-p", f"camera_info_url:=file://{yaml_path}"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     try:
         rclpy.init()
         sink = Sink()
@@ -93,11 +112,7 @@ def main():
         print("PASS: camera_info_url round-trips the exact K/D onto the camera_info topic")
     finally:
         rclpy.try_shutdown()
-        proc.terminate()                 # kill by handle (never pkill -f)
-        try:
-            proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+        kill_group(proc)
 
 
 if __name__ == "__main__":

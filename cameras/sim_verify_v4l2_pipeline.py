@@ -19,6 +19,7 @@ Requires a sourced ROS 2 (v4l2_camera) + ffmpeg.
     python3 sim_verify_v4l2_pipeline.py
 """
 import os
+import signal
 import subprocess
 import tempfile
 import time
@@ -57,6 +58,24 @@ def render_frames(outdir, n=40):
         cv2.imwrite(os.path.join(outdir, f"frame_{k:03d}.png"), frame)
 
 
+def kill_group(p, sig=signal.SIGTERM, wait=4):
+    """Kill a subprocess's whole group. `ros2 run` forks the node as a child, so
+    p.pid (the group leader, via start_new_session) must be SIGKILLed to be sure the
+    node child dies too — not just the wrapper. Never pkill -f (would self-match)."""
+    try:
+        os.killpg(p.pid, sig)
+    except ProcessLookupError:
+        return
+    try:
+        p.wait(timeout=wait)
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        os.killpg(p.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
+
 class Sink(Node):
     def __init__(self):
         super().__init__("v4l2_pipeline_sink")
@@ -85,14 +104,14 @@ def main():
         ["ffmpeg", "-loglevel", "error", "-re", "-stream_loop", "-1", "-framerate", "15",
          "-i", os.path.join(tmp, "frame_%03d.png"), "-vf", "format=yuyv422",
          "-f", "v4l2", DEV],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     time.sleep(2.5)                  # let ffmpeg establish the device format first
 
     node = subprocess.Popen(
         ["ros2", "run", "v4l2_camera", "v4l2_camera_node", "--ros-args",
          "-r", f"__ns:={NS}", "-p", f"video_device:={DEV}",
          "-p", f"image_size:=[{W},{H}]", "-p", "pixel_format:=YUYV"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     try:
         rclpy.init()
         sink = Sink()
@@ -108,12 +127,8 @@ def main():
         print("PASS: ffmpeg -> v4l2loopback -> v4l2_camera_node streams image_raw + camera_info")
     finally:
         rclpy.try_shutdown()
-        for p in (node, ffmpeg):     # kill by handle (never pkill -f)
-            p.terminate()
-            try:
-                p.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                p.kill()
+        kill_group(node)
+        kill_group(ffmpeg)
 
 
 if __name__ == "__main__":

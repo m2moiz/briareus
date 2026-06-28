@@ -59,6 +59,24 @@ def render_frames(outdir, n=40):
                     cv2.warpPerspective(board, M, (W, H), borderValue=255))
 
 
+def kill_group(p, sig=signal.SIGTERM, wait=4):
+    """Kill the subprocess group. p.pid is the group leader (start_new_session), so
+    SIGKILLing the group ensures the node/calibrator child dies even if its `ros2 run`
+    /xvfb-run wrapper already exited. Never pkill -f (would self-match)."""
+    try:
+        os.killpg(p.pid, sig)
+    except ProcessLookupError:
+        return
+    try:
+        p.wait(timeout=wait)
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        os.killpg(p.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
+
 def main():
     assert os.path.exists(DEV), f"{DEV} missing — load v4l2loopback (see docstring)"
     assert os.access(DEV, os.R_OK | os.W_OK), f"{DEV} not accessible — sudo chmod 666 {DEV}"
@@ -70,13 +88,13 @@ def main():
     ffmpeg = subprocess.Popen(
         ["ffmpeg", "-loglevel", "error", "-re", "-stream_loop", "-1", "-framerate", "15",
          "-i", os.path.join(tmp, "frame_%03d.png"), "-vf", "format=yuyv422", "-f", "v4l2", DEV],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     time.sleep(2.5)
     node = subprocess.Popen(
         ["ros2", "run", "v4l2_camera", "v4l2_camera_node", "--ros-args",
          "-r", f"__ns:={NS}", "-p", f"video_device:={DEV}",
          "-p", f"image_size:=[{W},{H}]", "-p", "pixel_format:=YUYV"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     time.sleep(3)
 
     # the documented operator command, under a virtual display for the GUI
@@ -89,18 +107,9 @@ def main():
         try:
             time.sleep(RUN_SECONDS)
         finally:
-            # clean SIGINT to the whole xvfb-run group (our own group, precise)
-            os.killpg(os.getpgid(calib.pid), signal.SIGINT)
-            try:
-                calib.wait(timeout=8)
-            except subprocess.TimeoutExpired:
-                os.killpg(os.getpgid(calib.pid), signal.SIGKILL)
-            node.terminate(); ffmpeg.terminate()
-            for p in (node, ffmpeg):
-                try:
-                    p.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    p.kill()
+            kill_group(calib, sig=signal.SIGINT, wait=8)   # let rclpy shut down cleanly
+            kill_group(node)
+            kill_group(ffmpeg)
 
     text = open(log).read()
     samples = re.findall(r"Added sample (\d+), p_x = ([\d.]+), p_y = ([\d.]+)", text)
