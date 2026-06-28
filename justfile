@@ -30,6 +30,10 @@ rviz:
 moveit-dance:
     "{{root}}/scripts/moveit-dance.sh"
 
+# beat-synced Macarena to a 103 BPM click track (audio on the Mac, arm in sim)
+macarena-music:
+    "{{root}}/scripts/macarena-music.sh"
+
 # stop all ROS processes in the VM (VM stays up)
 stop:
     "{{root}}/scripts/stop.sh"

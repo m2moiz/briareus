@@ -5,6 +5,9 @@
 logs/
 *.log
 
+# Generated audio (regenerate with scripts/make-click-track.py)
+assets/*.wav
+
 # Local Dolt working data (beads tracks issues via the Dolt server)
 .dolt/
 
